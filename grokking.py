@@ -53,3 +53,26 @@ class Block(nn.Module):
         x = x + self.mlp(self.ln2(x))
         return x
 
+class TinyTransformer(nn.Module):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.tok = nn.Embedding(V, d)
+        self.pos = nn.Embedding(4, d)
+
+        self.blocks = nn.ModuleList([Block(d, n_heads) for _ in range(n_layers)])
+
+        self.ln = nn.LayerNorm(d)
+        self.head = nn.linear(d, V)
+
+    def forward(self, tokens: "torch.Tensor") -> "torch.Tensor":
+        B, T = x.shape
+        pos_ids = torch.arange(T, device=tokens.device).unsqueeze(0).expand(B, T)
+        x = self.tok(tokens) + self.pos(pos_ids)
+
+        for block in self.blocks:
+            x = block(x)
+        
+        x = self.ln(x)
+        return self.head(x[:, -1, :])
+
