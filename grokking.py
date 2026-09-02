@@ -37,17 +37,17 @@ class Block(nn.Module):
 
     def __init__(self, d: int, n_heads: int = 4, mlp_mult: int = 4) -> None:
         super().__init__()
-        self.ln1 = nn.Layernorm(d)
+        self.ln1 = nn.LayerNorm(d)
         self.attn = MultiHeadCausalAttention(d, n_heads)
         self.ln2 = nn.LayerNorm(d)
         self.mlp = nn.Sequential(
-            nn.Linear(d, d * mlp_multi),
+            nn.Linear(d, d * mlp_mult),
             nn.GELU(),
-            nn.Linear(d * mpl_multi, d)
+            nn.Linear(d * mlp_mult, d)
         )
 
     def forward(self, x: "torch.Tensor") -> "torch.Tensor":
-        T = x.shape(1)
+        T = x.size(1)
         h = self.ln1(x)
         attn_out = self.attn(h)
         x = x + attn_out
@@ -64,10 +64,10 @@ class TinyTransformer(nn.Module):
         self.blocks = nn.ModuleList([Block(d, n_heads) for _ in range(n_layers)])
 
         self.ln = nn.LayerNorm(d)
-        self.head = nn.linear(d, V)
+        self.head = nn.Linear(d, V)
 
     def forward(self, tokens: "torch.Tensor") -> "torch.Tensor":
-        B, T = x.shape
+        B, T = tokens.shape
         pos_ids = torch.arange(T, device=tokens.device).unsqueeze(0).expand(B, T)
         x = self.tok(tokens) + self.pos(pos_ids)
 
@@ -90,8 +90,8 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 op_token, eq_token, V = p, p + 1, p + 2
 
-a = torch.arrange(p).repeat_interleave(p)
-b = torch.arrange(p).repeat(p)
+a = torch.arange(p).repeat_interleave(p)
+b = torch.arange(p).repeat(p)
 
 y = (a + b) % p
 
@@ -108,6 +108,8 @@ X_va, y_va = X[perm[n_train:]].to(device), y[perm[n_train:]].to(device)
 model = TinyTransformer().to(device)
 optim = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
 loss_fn = nn.CrossEntropyLoss()
+
+history = {"step": [], "train_acc": [], "val_acc": []}
 
 for step in range(1, n_steps + 1):
     model.train()
