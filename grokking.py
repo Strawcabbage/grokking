@@ -2,6 +2,7 @@ import torch
 import math
 from torch import nn
 import os
+import json
 
 class MultiHeadCausalAttention(nn.Module):
 
@@ -78,7 +79,7 @@ class TinyTransformer(nn.Module):
         return self.head(x[:, -1, :])
 
 p = 97
-d = 128
+d = 512
 n_heads = 4
 n_layers = 2
 train_frac = 0.3
@@ -132,6 +133,6 @@ for step in range(1, n_steps + 1):
 
 os.makedirs("logs", exist_ok=True)
 
-with open(f"log_wd{weight_decay:g}_tf{train_frac}.json", "w") as f:
+with open(f"logs/log_wd{weight_decay:g}_tf{train_frac}_d{d}.json", "w") as f:
     json.dump(history, f, indent=2)
     
