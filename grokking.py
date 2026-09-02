@@ -1,6 +1,7 @@
 import torch
 import math
 from torch import nn
+import os
 
 class MultiHeadCausalAttention(nn.Module):
 
@@ -104,4 +105,31 @@ n_train = int(X.size(0) * train_frac)
 X_tr, y_tr = X[perm[:n_train]].to(device), y[perm[:n_train]].to(device)
 X_va, y_va = X[perm[n_train:]].to(device), y[perm[n_train:]].to(device)
 
+model = TinyTransformer().to(device)
+optim = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
+loss_fn = nn.CrossEntropyLoss()
 
+for step in range(1, n_steps + 1):
+    model.train()
+    optim.zero_grad()
+    logits = model(X_tr)
+    loss = loss_fn(logits, y_tr)
+    loss.backward()
+    optim.step()
+
+    if step % log_every == 0 or step == 1:
+        model.eval()
+        with torch.no_grad():
+            tr_acc = (model(X_tr).argmax(-1) == y_tr).float().mean().item()
+            va_acc = (model(X_va).argmax(-1) == y_va).float().mean().item()
+        history["step"].append(step)
+        history["train_acc"].append(tr_acc)
+        history["val_acc"].append(va_acc)
+        print(f"[lesson 11] step={step:6d}  loss={loss.item():.4f}  "
+                f"train_acc={tr_acc:.3f}  val_acc={va_acc:.3f}")
+
+os.makedirs("logs", exist_ok=True)
+
+with open(f"log_wd{weight_decay:g}_tf{train_frac}.json", "w") as f:
+    json.dump(history, f, indent=2)
+    
