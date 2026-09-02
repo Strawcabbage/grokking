@@ -76,3 +76,32 @@ class TinyTransformer(nn.Module):
         x = self.ln(x)
         return self.head(x[:, -1, :])
 
+p = 97
+d = 128
+n_heads = 4
+n_layers = 2
+train_frac = 0.3
+lr = 1e-3
+weight_decay = 0.1
+n_steps = 100_000
+log_every = 200
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+op_token, eq_token, V = p, p + 1, p + 2
+
+a = torch.arrange(p).repeat_interleave(p)
+b = torch.arrange(p).repeat(p)
+
+y = (a + b) % p
+
+X = torch.stack([a, torch.full_like(a, op_token),
+                b, torch.full_like(a, eq_token)], dim=1)
+
+torch.manual_seed(0)
+perm = torch.randperm(X.size(0))
+n_train = int(X.size(0) * train_frac)
+
+X_tr, y_tr = X[perm[:n_train]].to(device), y[perm[:n_train]].to(device)
+X_va, y_va = X[perm[n_train:]].to(device), y[perm[n_train:]].to(device)
+
+
