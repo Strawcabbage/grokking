@@ -99,6 +99,8 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--seed", type=int, default=0, help="model init / training seed")
     ap.add_argument("--data_seed", type=int, default=0, help="train/val split seed")
     ap.add_argument("--out", type=str, default="logs")
+    ap.add_argument("--device", choices=["auto", "cuda", "cpu"], default="auto",
+                    help="auto = CUDA if available; cuda = fail instead of falling back to CPU")
     return ap.parse_args()
 
 def weight_norm(model: nn.Module) -> float:
@@ -106,7 +108,15 @@ def weight_norm(model: nn.Module) -> float:
 
 def main() -> None:
     args = parse_args()
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    if args.device == "cuda" and not torch.cuda.is_available():
+        why = ("this PyTorch is a CPU-only build; reinstall it from a CUDA wheel index "
+               "(see pytorch.org/get-started)" if torch.version.cuda is None else
+               f"PyTorch was built with CUDA {torch.version.cuda} but found no GPU; "
+               "check that `nvidia-smi` works and the NVIDIA driver is up to date")
+        raise SystemExit(f"--device cuda requested but CUDA is unavailable: {why}. (torch {torch.__version__})")
+    device = "cuda" if args.device != "cpu" and torch.cuda.is_available() else "cpu"
+    name = torch.cuda.get_device_name(0) if device == "cuda" else "CPU"
+    print(f"device: {device} ({name}), torch {torch.__version__}", flush=True)
     p = args.p
 
     op_token, eq_token, V = p, p + 1, p + 2

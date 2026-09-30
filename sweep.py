@@ -3,6 +3,7 @@
     python sweep.py                 # all experiments
     python sweep.py wd width        # just some of them
     python sweep.py --dry-run       # print the commands without running
+    python sweep.py --device=cuda   # other --flags are passed to every run
 
 Each run writes logs/<experiment>/wd{wd}_d{d}_b2{beta2}_s{seed}.json.
 """
@@ -32,6 +33,7 @@ def runs(name):
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     dry = "--dry-run" in sys.argv
+    extra = [a for a in sys.argv[1:] if a.startswith("--") and a != "--dry-run"]
     names = args or list(EXPERIMENTS)
     for name in names:
         out = os.path.join("logs", name)
@@ -41,7 +43,7 @@ def main():
                 print(f"skip {log}")
                 continue
             cmd = [sys.executable, "grokking.py", "--out", out] + \
-                  [f"--{k}={v}" for k, v in cfg.items()]
+                  [f"--{k}={v}" for k, v in cfg.items()] + extra
             print(" ".join(cmd), flush=True)
             if not dry:
                 subprocess.run(cmd, check=True)
