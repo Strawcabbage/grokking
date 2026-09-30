@@ -11,7 +11,11 @@ python grokking.py --wd 0.1 --d 512       # override any setting; see --help
 python sweep.py                           # all sweeps (27 runs), resumable
 python sweep.py wd                        # one sweep: wd | width | dip
 python sweep.py --dry-run                 # list the commands only
+python sweep.py --device=cuda             # extra --flags are passed to every run
 ```
+
+The script prints the device it uses at startup. Pass `--device cuda` to fail loudly
+instead of silently falling back to CPU (e.g. with a CPU-only PyTorch install).
 
 Baseline: d=128, 4 heads, 2 layers, AdamW (lr 1e-3, weight decay 1.0, betas 0.9/0.98),
 10-step warmup, full batch, 30% train split. `--seed` sets the model init;
